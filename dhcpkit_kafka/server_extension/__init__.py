@@ -10,7 +10,7 @@ from dhcpkit.ipv6.server.handlers import Handler
 from dhcpkit.ipv6.server.transaction_bundle import TransactionBundle
 from typing import Iterable, Tuple
 
-from dhcpkit_kafka.messages import IncomingDHCPKafkaMessage, OutgoingDHCPKafkaMessage
+from dhcpkit_kafka.messages import DHCPKafkaMessage
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class KafkaHandler(Handler):
 
     def pre(self, bundle: TransactionBundle):
         """
-        Log the request before we start processing it.
+        Log the request we got from the client.
 
         :param bundle: The transaction bundle
         """
@@ -105,20 +105,13 @@ class KafkaHandler(Handler):
             return
 
         try:
-            message = IncomingDHCPKafkaMessage(timestamp=int(time.time()),
-                                               server_name=self.server_name,
-                                               message=bundle.incoming_message)
+            message = DHCPKafkaMessage(timestamp=time.time(),
+                                       server_name=self.server_name,
+                                       message_in=bundle.incoming_message,
+                                       message_out=bundle.outgoing_message)
             self.kafka_producer.produce(bytes(message.save()))
         except Exception as e:
             logger.warning("Not logging transaction in LookingGlass: {}".format(e))
-
-    def handle(self, bundle: TransactionBundle):
-        """
-        We log in pre() and post. We don't do anything interesting here.
-
-        :param bundle: The transaction bundle
-        """
-        pass
 
     def post(self, bundle: TransactionBundle):
         """
@@ -131,9 +124,10 @@ class KafkaHandler(Handler):
             return
 
         try:
-            message = OutgoingDHCPKafkaMessage(timestamp=int(time.time()),
-                                               server_name=self.server_name,
-                                               message=bundle.outgoing_message)
+            message = DHCPKafkaMessage(timestamp=time.time(),
+                                       server_name=self.server_name,
+                                       message_in=bundle.incoming_message,
+                                       message_out=bundle.outgoing_message)
             self.kafka_producer.produce(bytes(message.save()))
         except Exception as e:
             logger.warning("Not logging transaction in LookingGlass: {}".format(e))

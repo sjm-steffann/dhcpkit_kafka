@@ -57,8 +57,7 @@ setup(
     include_package_data=True,
     entry_points={
         'dhcpkit_kafka.messages': [
-            '1 = dhcpkit_kafka.messages:IncomingDHCPKafkaMessage',
-            '2 = dhcpkit_kafka.messages:OutgoingDHCPKafkaMessage',
+            '1 = dhcpkit_kafka.messages:DHCPKafkaMessage',
         ],
         'dhcpkit.ipv6.server.extensions': [
             'kafka = dhcpkit_kafka.server_extension',
