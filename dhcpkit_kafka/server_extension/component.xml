@@ -1,0 +1,61 @@
+<component xmlns="https://raw.githubusercontent.com/zopefoundation/ZConfig/master/doc/schema.dtd"
+           prefix="dhcpkit_kafka.server_extension.config">
+
+    <description>
+        This is a server extension that publishes information on what the DHCPv6 server is doing to Kafka. You can
+        then run a collector that collects the information from all the DHCPv6 servers and presents them on a single
+        dashboard.
+    </description>
+
+    <sectiontype name="send-to-kafka"
+                 extends="handler_factory_base"
+                 implements="handler_factory"
+                 datatype=".KafkaHandlerFactory">
+
+        <description><![CDATA[
+            This section specifies the Kafka server cluster that data should be sent to.
+        ]]></description>
+
+        <example><![CDATA[
+            <send-to-kafka>
+                broker host1:9092
+                broker host2:9092
+
+                topic dhcpkit.messages
+            </send-to-kafka>
+        ]]></example>
+
+        <key name="server-name">
+            <description>
+                The name of this DHCPv6 server to label Kafka messages with
+            </description>
+            <metadefault>
+                The FQDN of the server
+            </metadefault>
+        </key>
+
+        <key name="source-address" datatype="ipaddr-or-hostname">
+            <description>
+                The source address to use when connecting to Kafka
+            </description>
+            <example>
+                dhcp01.example.com
+            </example>
+        </key>
+
+        <key name="topic" datatype=".topic_name" default="dhcpkit.messages">
+            <description>
+                The Kafka topic to publish DHCPKit messages on
+            </description>
+        </key>
+
+        <multikey name="broker" datatype="inet-connection-address" attribute="brokers">
+            <default>
+                localhost:9092
+            </default>
+            <description>
+                Kafka broker to connect to
+            </description>
+        </multikey>
+    </sectiontype>
+</component>
