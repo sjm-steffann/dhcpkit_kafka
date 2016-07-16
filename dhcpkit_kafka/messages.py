@@ -8,6 +8,8 @@ from dhcpkit.ipv6.messages import Message
 from dhcpkit.protocol_element import ProtocolElement
 from struct import unpack, pack
 
+from typing import Union
+
 DHCP_MESSAGE = 1
 
 
@@ -100,35 +102,75 @@ class UnknownKafkaMessage(KafkaMessage):
 class DHCPKafkaMessage(KafkaMessage, metaclass=abc.ABCMeta):
     """
     A message for publishing DHCPv6 messages over Kafka for analysis.
+
+    .. code-block:: none
+
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |    msg-type   |   name-len    |                               |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                               .
+      .                 server-name (variable length)                 .
+      |                                                               |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                         timestamp-in                          |
+      |                        (double float)                         |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                                                               |
+      .                                                               .
+      .                          message-in                           .
+      .                      (variable length)                        .
+      .                                                               .
+      |                                                               |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                         timestamp-out                         |
+      |                        (double float)                         |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                                                               |
+      .                                                               .
+      .                          message-out                          .
+      .                      (variable length)                        .
+      .                                                               .
+      |                                                               |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     """
+
     message_type = DHCP_MESSAGE
 
-    def __init__(self, timestamp: int = 0, server_name: str = '',
-                 message_in: Message = None, message_out: Message = None):
+    def __init__(self, server_name: str = '',
+                 timestamp_in: Union[int, float] = 0, message_in: Message = None,
+                 timestamp_out: Union[int, float] = 0, message_out: Message = None):
         super().__init__()
-        self.timestamp = timestamp
         self.server_name = server_name
+
+        self.timestamp_in = timestamp_in
         self.message_in = message_in
+
+        self.timestamp_out = timestamp_out
         self.message_out = message_out
 
     def validate(self):
         """
         Validate that the contents of this object
         """
-        # Check if the timestamp is a signed 64-bit integer
-        if not isinstance(self.timestamp, (int, float)):
-            raise ValueError("Timestamp must be a float or integer")
-
         # Check if the server name can be encoded into 255 bytes
         if len(self.server_name.encode('utf-8')) > 255:
             raise ValueError("The server name encoded as UTF-8 must be 255 bytes or less")
 
+        # Check if the timestamp is a signed 64-bit integer
+        if not isinstance(self.timestamp_in, (int, float)):
+            raise ValueError("Incoming timestamp must be float or integer")
+
         # Check the messages
         if self.message_in is not None and not isinstance(self.message_in, Message):
-            raise ValueError("The incoming message is not a valid DHCPv6 message")
+            raise ValueError("Incoming message is not a valid DHCPv6 message")
+
+        # Check if the timestamp is a signed 64-bit integer
+        if not isinstance(self.timestamp_out, (int, float)):
+            raise ValueError("Outgoing timestamp must be float or integer")
 
         if self.message_out is not None and not isinstance(self.message_out, Message):
-            raise ValueError("The outgoing message is not a valid DHCPv6 message")
+            raise ValueError("Outgoing message is not a valid DHCPv6 message")
 
     def load_from(self, buffer: bytes, offset: int = 0, length: int = None) -> int:
         """
@@ -148,9 +190,6 @@ class DHCPKafkaMessage(KafkaMessage, metaclass=abc.ABCMeta):
         if message_type != self.message_type:
             raise ValueError('The provided buffer does not contain {} data'.format(self.__class__.__name__))
 
-        self.timestamp = unpack('!d', buffer[my_offset:my_offset + 8])[0]
-        my_offset += 8
-
         # Parse the server name
         server_name_length = buffer[my_offset]
         my_offset += 1
@@ -158,7 +197,11 @@ class DHCPKafkaMessage(KafkaMessage, metaclass=abc.ABCMeta):
         self.server_name = buffer[my_offset:my_offset + server_name_length].decode('utf-8')
         my_offset += server_name_length
 
-        # Read the incoming message
+        # Read the incoming timestamp
+        self.timestamp_in = unpack('!d', buffer[my_offset:my_offset + 8])[0]
+        my_offset += 8
+
+        # Read the incoming packet
         message_in_len = int(unpack('!H', buffer[my_offset:my_offset + 2])[0])
         my_offset += 2
         if message_in_len:
@@ -166,6 +209,10 @@ class DHCPKafkaMessage(KafkaMessage, metaclass=abc.ABCMeta):
             my_offset += packet_length
         else:
             self.message_in = None
+
+        # Read the outgoing timestamp
+        self.timestamp_out = unpack('!d', buffer[my_offset:my_offset + 8])[0]
+        my_offset += 8
 
         # Read the outgoing message
         message_out_len = int(unpack('!H', buffer[my_offset:my_offset + 2])[0])
@@ -190,28 +237,23 @@ class DHCPKafkaMessage(KafkaMessage, metaclass=abc.ABCMeta):
 
         buffer = bytearray()
         buffer.append(self.message_type)
-        buffer.extend(pack('!d', self.timestamp))
 
         server_name_bytes = self.server_name.encode('utf-8')
         buffer.append(len(server_name_bytes))
         buffer.extend(server_name_bytes)
 
         # Incoming message
-        if self.message_in:
-            message_bytes = self.message_in.save()
-        else:
-            message_bytes = b''
+        message_bytes = self.message_in.save() if self.message_in else b''
 
-        buffer.extend(pack('!H', len(message_bytes)))
+        # Incoming timestamp and message
+        buffer.extend(pack('!dH', self.timestamp_in, len(message_bytes)))
         buffer.extend(message_bytes)
 
         # Outgoing message
-        if self.message_out:
-            message_bytes = self.message_out.save()
-        else:
-            message_bytes = b''
+        message_bytes = self.message_out.save() if self.message_out else b''
 
-        buffer.extend(pack('!H', len(message_bytes)))
+        # Outgoing timestamp and message
+        buffer.extend(pack('!dH', self.timestamp_out, len(message_bytes)))
         buffer.extend(message_bytes)
 
         return buffer

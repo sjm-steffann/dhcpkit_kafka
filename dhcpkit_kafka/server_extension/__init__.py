@@ -35,6 +35,15 @@ class KafkaHandler(Handler):
     and responses into an SQLite database.
 
     The primary key is (duid, interface_id, remote_id)
+
+    :type source_address: Tuple[str, int]
+    :type brokers: Iterable[Tuple[str, int]]
+    :type topic_name: str
+    :type server_name: str
+    :type kafka: pykafka.KafkaClient
+    :type kafka_topic: pykafka.Topic
+    :type kafka_producer: pykafka.Producer
+    :type last_connect_attempt: int
     """
 
     def __init__(self, source_address: Tuple[str, int], brokers: Iterable[Tuple[str, int]], topic_name: str,
@@ -47,22 +56,16 @@ class KafkaHandler(Handler):
         self.server_name = server_name or socket.getfqdn()
 
         self.kafka = None
-        """
-        The Kafka client
-        :type: pykafka.KafkaClient
-        """
+        """The Kafka client"""
 
         self.kafka_topic = None
-        """
-        The Kafka topic we publish to
-        :type: pykafka.Topic
-        """
+        """The Kafka topic we publish to"""
 
         self.kafka_producer = None
-        """
-        The Kafka producer
-        :type: pykafka.Producer
-        """
+        """The Kafka producer"""
+
+        self.last_connect_attempt = 0
+        """Remember when the last connection attempt was for reconnect rate-limiting"""
 
     def worker_init(self):
         """
@@ -71,10 +74,21 @@ class KafkaHandler(Handler):
         logging.getLogger('pykafka').setLevel(logging.WARNING)
         logging.getLogger('pykafka.cluster').setLevel(logging.CRITICAL)
 
-        # Build as strings: the pyKafka type hinting is wrong
-        hosts = [_format_host_port(host, port or 9092) for host, port in self.brokers]
+        # Create the connection
+        self.connect()
+
+    def connect(self):
+        now = time.time()
+        if now - self.last_connect_attempt < 5:
+            # Last attempt was less than 5 seconds ago, don't push it...
+            return
+
+        self.last_connect_attempt = now
 
         try:
+            # Build as strings: the pyKafka type hinting is wrong
+            hosts = [_format_host_port(host, port or 9092) for host, port in self.brokers]
+
             # noinspection PyTypeChecker
             self.kafka = pykafka.KafkaClient(hosts=','.join(hosts), source_address=self.source_address or '')
             """The Kafka client"""
@@ -89,45 +103,43 @@ class KafkaHandler(Handler):
 
     def __del__(self):
         """
-        Clean up when this option handler is being removed (or reloaded)
+        Clean up when this option handler is being removed (or reloaded).
         """
         if self.kafka_producer:
             self.kafka_producer.stop()
 
-    def pre(self, bundle: TransactionBundle):
+    def analyse_pre(self, bundle: TransactionBundle):
         """
-        Log the request we got from the client.
+        Start building the Kafka message.
 
         :param bundle: The transaction bundle
         """
-        # If something went wrong just return, don't let a Kafka error ruin our server
-        if not self.kafka_producer:
-            return
+        bundle.handler_data[self] = DHCPKafkaMessage(server_name=self.server_name,
+                                                     timestamp_in=time.time(),
+                                                     message_in=bundle.incoming_message)
 
-        try:
-            message = DHCPKafkaMessage(timestamp=time.time(),
-                                       server_name=self.server_name,
-                                       message_in=bundle.incoming_message,
-                                       message_out=bundle.outgoing_message)
-            self.kafka_producer.produce(bytes(message.save()))
-        except Exception as e:
-            logger.warning("Not logging transaction in LookingGlass: {}".format(e))
-
-    def post(self, bundle: TransactionBundle):
+    def analyse_post(self, bundle: TransactionBundle):
         """
-        Log the response before we send it to the client.
+        Finish the Kafka message and send it.
 
         :param bundle: The transaction bundle
         """
-        # If something went wrong just return, don't let a Kafka error ruin our server
+        # Try to reconnect if necessary
         if not self.kafka_producer:
-            return
+            self.connect()
+            if not self.kafka_producer:
+                # Ok, nowhere to send the analysis, stop
+                return
 
         try:
-            message = DHCPKafkaMessage(timestamp=time.time(),
-                                       server_name=self.server_name,
-                                       message_in=bundle.incoming_message,
-                                       message_out=bundle.outgoing_message)
+            # Get the Kafka message from storage
+            message = bundle.handler_data[self]
+
+            # Add the outgoing message to the Kafka message
+            message.timestamp_out = time.time()
+            message.message_out = bundle.outgoing_message
+
+            # And send the Kafka message
             self.kafka_producer.produce(bytes(message.save()))
         except Exception as e:
             logger.warning("Not logging transaction in LookingGlass: {}".format(e))
