@@ -1,19 +1,17 @@
 """
 Messages that are sent over Kafka
 """
-import abc
-
-# Constants for the message direction
-from dhcpkit.ipv6.messages import Message
-from dhcpkit.protocol_element import ProtocolElement
 from struct import unpack, pack
 
+from dhcpkit.ipv6.messages import Message
+from dhcpkit.protocol_element import ProtocolElement
 from typing import Union
 
+# Constants for the message direction
 DHCP_MESSAGE = 1
 
 
-class KafkaMessage(ProtocolElement, metaclass=abc.ABCMeta):
+class KafkaMessage(ProtocolElement):
     """
     The base class for Kafka messages.
 
@@ -99,7 +97,7 @@ class UnknownKafkaMessage(KafkaMessage):
         return buffer
 
 
-class DHCPKafkaMessage(KafkaMessage, metaclass=abc.ABCMeta):
+class DHCPKafkaMessage(KafkaMessage):
     """
     A message for publishing DHCPv6 messages over Kafka for analysis.
 
