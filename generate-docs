@@ -1,0 +1,11 @@
+# Remove the old generated docs
+rm -rf build/sphinx
+rm -rf docs/api/
+rm -rf docs/config/
+
+# Generate the API docs
+sphinx-apidoc --force --separate --module-first --doc-project=DHCPKit-Kafka --output-dir=docs/api dhcpkit_kafka
+rm docs/api/modules.rst
+
+# Generate the config docs
+dhcpkit-generate-config-docs --force --extension dhcpkit_kafka --output-dir docs/config/
