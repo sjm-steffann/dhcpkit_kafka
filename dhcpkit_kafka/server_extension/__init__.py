@@ -78,6 +78,9 @@ class KafkaHandler(Handler):
         self.connect()
 
     def connect(self):
+        """
+        Connect the producer to the broker.
+        """
         now = time.time()
         if now - self.last_connect_attempt < 5:
             # Last attempt was less than 5 seconds ago, don't push it...
@@ -96,7 +99,10 @@ class KafkaHandler(Handler):
             self.kafka_topic = self.kafka.topics[self.topic_name.encode('ascii')]
             """The Kafka topic we publish to"""
 
-            self.kafka_producer = self.kafka_topic.get_producer(block_on_queue_full=False)
+            self.kafka_producer = self.kafka_topic.get_producer(block_on_queue_full=False,
+                                                                linger_ms=500,
+                                                                min_queued_messages=50,
+                                                                max_queued_messages=1000)
             """The Kafka producer"""
         except Exception as e:
             logger.critical("Kafka logging disabled: {}".format(e))

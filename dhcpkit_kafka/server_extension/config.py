@@ -12,6 +12,12 @@ topic_max_length = 255
 
 
 def topic_name(value: str) -> str:
+    """
+    Data validation for Kafka topic names.
+
+    :param value: The value from the configuration file
+    :return: The validated value
+    """
     if value in ['', '.', '..']:
         raise ValueError("Topic name can not be empty, '.' or '..'")
 
