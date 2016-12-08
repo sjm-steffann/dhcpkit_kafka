@@ -23,7 +23,7 @@ from dhcpkit.ipv6.options import ElapsedTimeOption, RapidCommitOption, OptionReq
     OPTION_VENDOR_OPTS, VendorClassOption
 
 from dhcpkit_kafka.messages import DHCPKafkaMessage
-from tests.messages import test_kafka_message
+from dhcpkit_kafka.tests.messages import test_kafka_message
 
 # Use the relayed solicit message from dhcpkit.tests.ipv6.messages.test_relay_forward_message
 relayed_solicit_message = RelayForwardMessage(

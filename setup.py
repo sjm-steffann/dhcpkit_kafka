@@ -69,7 +69,7 @@ setup(
         'pykafka',
     ],
 
-    test_suite='tests',
+    test_suite='dhcpkit_kafka.tests',
 
     author='Sander Steffann',
     author_email='sander@steffann.nl',

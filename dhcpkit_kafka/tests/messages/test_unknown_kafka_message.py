@@ -4,7 +4,7 @@ Test the UnknownKafkaMessage implementation
 import unittest
 
 from dhcpkit_kafka.messages import UnknownKafkaMessage
-from tests.messages import test_kafka_message
+from dhcpkit_kafka.tests.messages import test_kafka_message
 
 unknown_message = UnknownKafkaMessage(255, b'ThisIsAnUnknownMessage')
 unknown_packet = bytes.fromhex('ff') + b'ThisIsAnUnknownMessage'
