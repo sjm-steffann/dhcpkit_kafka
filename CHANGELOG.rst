@@ -1,14 +1,10 @@
-1.0.0 - Unreleased
+1.0.0 - 2016-12-08
 ------------------
-
-New features
-^^^^^^^^^^^^
 
 Fixes
 ^^^^^
+- Limit the queue sizes of pykafka to prevent memory problems when the Kafka cluster is unreachable
 
 Changes for users
 ^^^^^^^^^^^^^^^^^
-
-Changes for developers
-^^^^^^^^^^^^^^^^^^^^^^
+- Include documentation

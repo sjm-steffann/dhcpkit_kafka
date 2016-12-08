@@ -3,9 +3,8 @@ Setup script for dhcpkit_looking_glass
 """
 import os
 
-from setuptools import find_packages, setup
-
 import dhcpkit_kafka
+from setuptools import find_packages, setup
 
 
 # Utility function to read the README file.
@@ -32,7 +31,7 @@ setup(
     url='https://github.com/sjm-steffann/dhcpkit_kafka',
     license='GPLv3',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Environment :: No Input/Output (Daemon)',
         'Environment :: Web Environment',
@@ -73,6 +72,9 @@ setup(
 
     author='Sander Steffann',
     author_email='sander@steffann.nl',
+
+    maintainer='Sander Steffann',
+    maintainer_email='sander@steffann.nl',
 
     zip_safe=False,
 )
