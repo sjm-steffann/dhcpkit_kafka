@@ -83,7 +83,7 @@ class UnknownKafkaMessage(KafkaMessage):
 
         return my_offset
 
-    def save(self) -> bytes:
+    def save(self) -> Union[bytes, bytearray]:
         """
         Save the internal state of this object as a buffer.
 
@@ -170,6 +170,7 @@ class DHCPKafkaMessage(KafkaMessage):
         if self.message_out is not None and not isinstance(self.message_out, Message):
             raise ValueError("Outgoing message is not a valid DHCPv6 message")
 
+    # noinspection PyUnusedLocal
     def load_from(self, buffer: bytes, offset: int = 0, length: int = None) -> int:
         """
         Load the internal state of this object from the given buffer.
@@ -225,7 +226,7 @@ class DHCPKafkaMessage(KafkaMessage):
 
         return my_offset
 
-    def save(self) -> bytes:
+    def save(self) -> Union[bytes, bytearray]:
         """
         Save the internal state of this object as a buffer.
 
