@@ -34,5 +34,5 @@ class UnknownKafkaMessageTestCase(test_kafka_message.KafkaMessageTestCase):
             self.message.validate()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     unittest.main()

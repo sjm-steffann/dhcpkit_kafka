@@ -3,7 +3,7 @@ Test the KafkaMessage implementation
 """
 import unittest
 
-from dhcpkit_kafka.messages import UnknownKafkaMessage, KafkaMessage
+from dhcpkit_kafka.messages import KafkaMessage, UnknownKafkaMessage
 
 
 class KafkaMessageTestCase(unittest.TestCase):
@@ -66,5 +66,5 @@ class KafkaMessageTestCase(unittest.TestCase):
             self.message.validate()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     unittest.main()

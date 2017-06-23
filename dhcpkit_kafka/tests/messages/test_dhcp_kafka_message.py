@@ -4,24 +4,19 @@ Test the UnknownKafkaMessage implementation
 
 import codecs
 import unittest
-from ipaddress import IPv6Network, IPv6Address
+from ipaddress import IPv6Address, IPv6Network
 
 from dhcpkit.ipv6.duids import LinkLayerDUID, LinkLayerTimeDUID
-from dhcpkit.ipv6.extensions.dns import OPTION_DNS_SERVERS
-from dhcpkit.ipv6.extensions.dns import RecursiveNameServersOption
+from dhcpkit.ipv6.extensions.dns import OPTION_DNS_SERVERS, RecursiveNameServersOption
 from dhcpkit.ipv6.extensions.ntp import OPTION_NTP_SERVER
-from dhcpkit.ipv6.extensions.prefix_delegation import IAPDOption, IAPrefixOption
-from dhcpkit.ipv6.extensions.prefix_delegation import OPTION_IA_PD
+from dhcpkit.ipv6.extensions.prefix_delegation import IAPDOption, IAPrefixOption, OPTION_IA_PD
 from dhcpkit.ipv6.extensions.remote_id import RemoteIdOption
 from dhcpkit.ipv6.extensions.sntp import OPTION_SNTP_SERVERS
-from dhcpkit.ipv6.extensions.sol_max_rt import OPTION_SOL_MAX_RT, OPTION_INF_MAX_RT
-from dhcpkit.ipv6.messages import AdvertiseMessage, RelayReplyMessage
-from dhcpkit.ipv6.messages import SolicitMessage, RelayForwardMessage
-from dhcpkit.ipv6.options import ClientIdOption, IANAOption, \
-    ReconfigureAcceptOption, IAAddressOption, ServerIdOption, RelayMessageOption, InterfaceIdOption
-from dhcpkit.ipv6.options import ElapsedTimeOption, RapidCommitOption, OptionRequestOption, OPTION_IA_NA, \
-    OPTION_VENDOR_OPTS, VendorClassOption
-
+from dhcpkit.ipv6.extensions.sol_max_rt import OPTION_INF_MAX_RT, OPTION_SOL_MAX_RT
+from dhcpkit.ipv6.messages import AdvertiseMessage, RelayForwardMessage, RelayReplyMessage, SolicitMessage
+from dhcpkit.ipv6.options import ClientIdOption, ElapsedTimeOption, IAAddressOption, IANAOption, InterfaceIdOption, \
+    OPTION_IA_NA, OPTION_VENDOR_OPTS, OptionRequestOption, RapidCommitOption, ReconfigureAcceptOption, \
+    RelayMessageOption, ServerIdOption, VendorClassOption
 from dhcpkit_kafka.messages import DHCPKafkaMessage
 from dhcpkit_kafka.tests.messages import test_kafka_message
 
@@ -249,5 +244,5 @@ class NoOutboundMessageDHCPKafkaMessageTestCase(test_kafka_message.KafkaMessageT
         self.assertIsInstance(self.message, DHCPKafkaMessage)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     unittest.main()
