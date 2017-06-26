@@ -18,6 +18,3 @@ Distribution status
 
 .. image:: https://img.shields.io/pypi/pyversions/dhcpkit_kafka.svg
   :target: https://pypi.python.org/pypi/dhcpkit_kafka
-
-.. image:: https://img.shields.io/pypi/dw/dhcpkit_kafka.svg
-  :target: https://pypi.python.org/pypi/dhcpkit_kafka
